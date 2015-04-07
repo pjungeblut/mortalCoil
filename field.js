@@ -35,6 +35,12 @@ function Field(level, context) {
 	var mouseY;
 	
 	/**
+	 * the line and column below the mouse ot touch
+	 */
+	var activeLine;
+	var activeCol;
+	
+	/**
 	 * get mouse coordinates
 	 */
 	window.addEventListener("mousemove", function(e) {
@@ -103,13 +109,14 @@ function Field(level, context) {
 	 * 
 	 * also gives invalid cells!
 	 * 
-	 * @return array with line and col (in that order)
+	 * result stored in activeLine, activeCol
 	 */
 	function getUnderlyingCell() {
 		var col = parseInt((mouseX - offset) / (cellSize + 1));
 		var line = parseInt(mouseY / (cellSize + 1));
 		
-		return [line, col];
+		activeLine = line;
+		activeCol = col;
 	}
 	
 	/**
