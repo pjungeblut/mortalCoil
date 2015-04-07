@@ -28,18 +28,28 @@ function MortalCoil(pCanvasId) {
 	var height;
 	
 	/**
-	 * call the init method
+	 * the actual level
 	 */
-	init(canvasId);
+	var level;
+	
+	/**
+	 * the field to play on
+	 */
+	var field;
 	
 	/**
 	 * initializes resize handler, thus opens the canvas and gets the context
+	 * opens a level
 	 */
+	init();
 	function init() {
 		resize();
 		window.addEventListener("resize", function() {
 			resize();
 		});
+		
+		level = new Level(levels[0]);
+		field = new Field(level, context);
 	}
 	
 	/**
@@ -51,12 +61,16 @@ function MortalCoil(pCanvasId) {
 		height = window.innerHeight;
 		
 		canvas = document.getElementById(canvasId);
-		if (canvas === null) console.error("Can't find canvas with id=\"" + canvasId + "\"");
+		if (canvas === null) throw new Error("Can't find canvas with id=\"" + canvasId + "\"");
 		
 		canvas.height = height;
 		canvas.width = width;
 		
 		context = this.canvas.getContext("2d");
-		if (context === null) console.error("Can't open context on canvas with id=\"" + canvasId + "\"");
+		if (context === null) throw new Error("Can't open context on canvas with id=\"" + canvasId + "\"");
+		
+		if (typeof(field) !== "undefined") {
+			field.resize(context);
+		}
 	}
 }
