@@ -29,6 +29,31 @@ function Field(level, context) {
 	var EMPTY_COLOR = "#DDDDDD";
 	
 	/**
+	 * mouse coordinates
+	 */
+	var mouseX;
+	var mouseY;
+	
+	/**
+	 * get mouse coordinates
+	 */
+	window.addEventListener("mousemove", function(e) {
+		mouseX = e.clientX;
+		mouseY = e.clientY;
+		getUnderlyingCell();
+	});
+	
+	/**
+	 * get touch coordinates
+	 */
+	window.addEventListener("touchmove", function(e) {
+		mouseX = e.touches[0].clientX;
+		mouseY = e.touches[0].clientY;
+		e.preventDefault();
+		getUnderlyingCell();
+	});
+	
+	/**
 	 * to be called by the resize method of the game
 	 * 
 	 * @param width the new width of the canvas
@@ -70,6 +95,21 @@ function Field(level, context) {
 		var width = parseInt((cWidth - level.getWidth() - 1) / level.getWidth());
 		var height = parseInt((cHeight - level.getHeight() - 1) / level.getHeight());
 		return Math.min(width, height);	
+	}
+	
+	/**
+	 * calculates the line and column of the cell
+	 * below the touch our mouse
+	 * 
+	 * also gives invalid cells!
+	 * 
+	 * @return array with line and col (in that order)
+	 */
+	function getUnderlyingCell() {
+		var col = parseInt((mouseX - offset) / (cellSize + 1));
+		var line = parseInt(mouseY / (cellSize + 1));
+		
+		return [line, col];
 	}
 	
 	/**
