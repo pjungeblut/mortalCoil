@@ -1,5 +1,6 @@
 var EMPTY = 0;
 var WALL = 1;
+var BLOCKED = 2;
 
 var levels = [
 	[

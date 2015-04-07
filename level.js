@@ -41,7 +41,7 @@ function Level(levelDefinition) {
 	 * 
 	 * @param line the line, 0-bases
 	 * @param col the column, 0-based
-	 * @return either EMPTY or WALL
+	 * @return either EMPTY, WALL or BLOCKED
 	 */
 	this.getValue = function(line, col) {
 		if (line < 0 || line >= height || col < 0 || col >= width) {
@@ -49,6 +49,20 @@ function Level(levelDefinition) {
 		}
 		
 		return definition[line][col];
+	};
+	
+	/**
+	 * sets a cell as blocked
+	 * 
+	 * @param line the line to be blocked
+	 * @param col the column to be blocked
+	 */
+	this.setBlocked = function(line, col) {
+		if (line < 0 || line >= height || col < 0 || col >= width) {
+			throw new Error("Invalid position in level: line=" + line + ", column=" + col);
+		}
+		
+		definition[line][col] = BLOCKED;
 	};
 	
 	/**

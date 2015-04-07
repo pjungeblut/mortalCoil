@@ -25,8 +25,10 @@ function Field(level, context) {
 	var offset;
 	var GRID_COLOR = "#777777";
 	var BG_COLOR = "#000000";
-	var WALL_COLOR = "#66CC66";
+	var WALL_COLOR = "#55BB55";
 	var EMPTY_COLOR = "#DDDDDD";
+	var ACTIVE_COLOR = "#888888";
+	var BLOCKED_COLOR = "#F5DA81";
 	
 	/**
 	 * mouse coordinates
@@ -115,8 +117,17 @@ function Field(level, context) {
 		var col = parseInt((mouseX - offset) / (cellSize + 1));
 		var line = parseInt(mouseY / (cellSize + 1));
 		
+		var doDraw = false;
+		if (line != activeLine || col != activeCol) {
+			doDraw = true;
+		}
+		
 		activeLine = line;
 		activeCol = col;
+		
+		if (doDraw) {
+			draw();
+		}
 	}
 	
 	/**
@@ -131,10 +142,22 @@ function Field(level, context) {
 				var x = offset + j * (cellSize + 1) + 1;
 				var y = i * (cellSize + 1) + 1;
 				
-				if (level.getValue(i, j) === WALL) {
-					context.fillStyle = WALL_COLOR;
-				} else {
-					context.fillStyle = EMPTY_COLOR;
+				switch(level.getValue(i, j)) {
+					case WALL:
+						context.fillStyle = WALL_COLOR;
+						break;
+					case EMPTY:
+						if (i === activeLine && j === activeCol) {
+							context.fillStyle = ACTIVE_COLOR;
+						} else {
+							context.fillStyle = EMPTY_COLOR;
+						}
+						break;
+					case BLOCKED:
+						context.fillStyle = BLOCKED_COLOR;
+						break;
+					default:
+						throw new Error("Invalid level state at line=" + i + ", column=" + j +  ".");
 				}
 				
 				context.fillRect(x, y, cellSize, cellSize);
