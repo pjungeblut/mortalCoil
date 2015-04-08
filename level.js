@@ -62,7 +62,29 @@ function Level(levelDefinition) {
 			throw new Error("Invalid position in level: line=" + line + ", column=" + col);
 		}
 		
+		if (definition[line][col] !== EMPTY) {
+			throw new Error("Only empty cells can be blocked: line=" + line + ", column=" + col);
+		}
+		
 		definition[line][col] = BLOCKED;
+	};
+	
+	/**
+	 * sets a cell as empty that was blocked before
+	 * 
+	 * @param line the line to be made empty
+	 * @param col the column to be made empty
+	 */
+	this.setEmpty = function(line, col) {
+		if (line < 0 || line >= height || col < 0 || col >= width) {
+			throw new Error("Invalid position in level: line=" + line + ", column=" + col);
+		}
+		
+		if (definition[line][col] !== BLOCKED) {
+			throw new Error("Only blocked cells can be made empty: line=" + line + ", column=" + col);
+		}
+		
+		definition[line][col] = EMPTY;
 	};
 	
 	/**

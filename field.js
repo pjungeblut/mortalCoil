@@ -3,8 +3,9 @@
  * 
  * @param level a level object
  * @param context the context to draw on
+ * @param game back reference to the main game
  */
-function Field(level, context) {
+function Field(level, context, game) {
 	/**
 	 * saving the context
 	 */
@@ -27,8 +28,10 @@ function Field(level, context) {
 	var BG_COLOR = "#000000";
 	var WALL_COLOR = "#55BB55";
 	var EMPTY_COLOR = "#DDDDDD";
-	var ACTIVE_COLOR = "#888888";
-	var BLOCKED_COLOR = "#F5DA81";
+	var ACTIVE_COLOR = "#AAAAAA";
+	var HEAD_COLOR = "#DD8888";
+	var TAIL_COLOR = HEAD_COLOR;
+	var BLOCKED_COLOR = "#CCCCCC";
 	
 	/**
 	 * mouse coordinates
@@ -41,6 +44,28 @@ function Field(level, context) {
 	 */
 	var activeLine;
 	var activeCol;
+	
+	/**
+	 * states, the game can be in
+	 * -searching for start point
+	 * -moving
+	 */
+	var SEARCHING = 0, MOVING = 1;
+	var gameState;
+	
+	/**
+	 * the game history
+	 * -start point
+	 * -head point
+	 * -movements with deltas
+	 */
+	var startLine;
+	var startCol;
+	var headLine;
+	var headCol;
+	var movements = [];
+	var RIGHT = 0, LEFT = 1, DOWN = 2, UP = 3;
+	var DELTAS = [[0, 1], [0, -1], [1, 0], [-1, 0]]; 
 	
 	/**
 	 * get mouse coordinates
@@ -59,6 +84,50 @@ function Field(level, context) {
 		mouseY = e.touches[0].clientY;
 		e.preventDefault();
 		getUnderlyingCell();
+	});
+	
+	/**
+	 * get clicks
+	 */
+	window.addEventListener("click", function(e) {
+		clickHandler();
+	});
+	
+	/**
+	 * get keyboard events
+	 */
+	window.addEventListener("keyup", function(e) {
+		if (!e) {
+			e = window.event;
+		}
+		
+		if (e.which) {
+			var key = e.which;
+		} else if (e.keyCode) {
+			var key = e.keyCode;
+		}
+		
+		switch (key) {
+			case 37:
+				move(DELTAS[LEFT]);
+				break;
+			case 38:
+				move(DELTAS[UP]);
+				break;
+			case 39:
+				move(DELTAS[RIGHT]);
+				break;
+			case 40:
+				move(DELTAS[DOWN]);
+				break;
+		}
+		
+		if (key >= 37 && key <= 40) {
+			e.cancelBubble = true;
+			e.stopPropagation();
+			e.preventDefault();
+			return false;
+		}
 	});
 	
 	/**
@@ -89,6 +158,7 @@ function Field(level, context) {
 	 */
 	init();
 	function init() {
+		gameState = SEARCHING;
 		that.resize(context);
 	}
 	
@@ -131,38 +201,97 @@ function Field(level, context) {
 	}
 	
 	/**
+	 * does a movement in direction dx, dy
+	 * 
+	 * @param delta direction to move
+	 */
+	function move(delta) {
+		var dy = delta[0];
+		var dx = delta[1];
+		
+		var nextLine = headLine + dy;
+		var nextCol = headCol + dx;
+		
+		if (level.getValue(nextLine, nextCol) === EMPTY) {
+			while (level.getValue(nextLine, nextCol) === EMPTY) {
+				headLine = nextLine;
+				headCol = nextCol;
+				
+				movements.push([headLine, headCol]);
+				level.setBlocked(headLine, headCol);
+				
+				nextLine = headLine + dy;
+				nextCol = headCol + dx;
+			}
+		} else if (level.getValue(nextLine, nextCol) === BLOCKED) {
+			while (level.getValue(nextLine, nextCol) === BLOCKED) {
+				var toppest = movements.pop();
+				level.setEmpty(toppest[0], toppest[1]);
+				
+				var top = movements[movements.length - 1];
+				
+				if (top[0] === nextLine && top[1] === nextCol) {
+					headLine = nextLine;
+					headCol = nextCol;
+					
+					nextLine = headLine + dy;
+					nextCol = headCol + dx;
+				} else {
+					movements.push(toppest);
+					level.setBlocked(toppest[0], toppest[1]);
+					break;
+				}
+			}
+		}
+		
+		draw();
+	}
+	
+	/**
+	 * handles click or touch events
+	 */
+	function clickHandler() {
+		if (activeLine < 0 || activeLine >= level.getHeight() || activeCol < 0 || activeCol >= level.getWidth()) {
+			return;
+		}
+		
+		switch (gameState) {
+			case SEARCHING:
+				if (level.getValue(activeLine, activeCol) === EMPTY) {
+					startLine = activeLine;
+					startCol = activeCol;
+					headLine = startLine;
+					headCol = startCol;
+					movements = [[startLine, startCol]];
+					level.setBlocked(startLine, startCol);
+					gameState = MOVING;
+				}
+				break;
+			case MOVING:
+				if (headLine === activeLine && headCol < activeCol) {
+					move(DELTAS[RIGHT]);
+				} else if (headLine === activeLine && headCol > activeCol) {
+					move(DELTAS[LEFT]);
+				} else if (headCol === activeCol && headLine < activeLine) {
+					move(DELTAS[DOWN]);
+				} else if (headCol === activeCol && headLine > activeLine) {
+					move(DELTAS[UP]);
+				}
+				break;
+			default:
+				throw new Error("Invalid game state: " + gameState + ".");
+		}
+	}
+	
+	/**
 	 * draws the field
 	 */
 	function draw() {
 		drawBackground();
 		drawGrid();
-		
-		for (var i = 0; i < level.getHeight(); i++) {
-			for (var j = 0; j < level.getWidth(); j++) {
-				var x = offset + j * (cellSize + 1) + 1;
-				var y = i * (cellSize + 1) + 1;
-				
-				switch(level.getValue(i, j)) {
-					case WALL:
-						context.fillStyle = WALL_COLOR;
-						break;
-					case EMPTY:
-						if (i === activeLine && j === activeCol) {
-							context.fillStyle = ACTIVE_COLOR;
-						} else {
-							context.fillStyle = EMPTY_COLOR;
-						}
-						break;
-					case BLOCKED:
-						context.fillStyle = BLOCKED_COLOR;
-						break;
-					default:
-						throw new Error("Invalid level state at line=" + i + ", column=" + j +  ".");
-				}
-				
-				context.fillRect(x, y, cellSize, cellSize);
-			}
-		}
+		drawCells();
+		drawPath();
+		drawHead();
 	}
 	
 	/**
@@ -201,5 +330,70 @@ function Field(level, context) {
 			context.closePath();
 			y += cellSize + 1;
 		}
+	}
+	
+	/**
+	 * draws the cells
+	 */
+	function drawCells() {
+		for (var i = 0; i < level.getHeight(); i++) {
+			for (var j = 0; j < level.getWidth(); j++) {
+				var x = offset + j * (cellSize + 1) + 1;
+				var y = i * (cellSize + 1) + 1;
+				
+				switch(level.getValue(i, j)) {
+					case WALL:
+						context.fillStyle = WALL_COLOR;
+						break;
+					case EMPTY:
+						if (i === activeLine && j === activeCol) {
+							context.fillStyle = ACTIVE_COLOR;
+						} else {
+							context.fillStyle = EMPTY_COLOR;
+						}
+						break;
+					case BLOCKED:
+						context.fillStyle = BLOCKED_COLOR;
+						break;
+					default:
+						throw new Error("Invalid level state at line=" + i + ", column=" + j +  ".");
+				}
+				
+				context.fillRect(x, y, cellSize, cellSize);
+			}
+		}
+	}
+	
+	/**
+	 * draws the path
+	 */
+	function drawPath() {
+		if (movements.length < 2) return;
+		
+		for (var i = 1; i < movements.length; i++) {
+			var xFrom = offset + movements[i - 1][1] * (cellSize + 1) + (cellSize / 2) + 1;
+			var yFrom = movements[i - 1][0] * (cellSize + 1) + (cellSize / 2) + 1;
+			
+			var xTo = offset + movements[i][1] * (cellSize + 1) + (cellSize / 2) + 1;
+			var yTo = movements[i][0] * (cellSize + 1) + (cellSize / 2) + 1;
+			
+			context.lineWidth = 5;
+			context.strokeStyle = TAIL_COLOR;
+			context.beginPath();
+			context.moveTo(xFrom, yFrom);
+			context.lineTo(xTo, yTo);
+			context.stroke();
+			context.closePath();
+		}
+	}
+	
+	/**
+	 * draws the head
+	 */
+	function drawHead() {
+		var x = offset + headCol * (cellSize + 1) + 1;
+		var y = headLine * (cellSize + 1) + 1;
+		context.fillStyle = HEAD_COLOR;
+		context.fillRect(x, y, cellSize, cellSize);
 	}
 }
