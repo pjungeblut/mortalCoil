@@ -43,14 +43,20 @@ function MortalCoil(pCanvasId) {
 	 * loads a new level
 	 */
 	this.finish = function() {
-		level = null;
-		field = null;
-		
-		levelCounter++;
-		levelCounter %= levels.length;
-		
-		level = new Level(levels[levelCounter]);
-		field = new Field(level, context, this);
+		window.setTimeout(function() {
+			level = null;
+			field = null;
+			
+			levelCounter++;
+			levelCounter %= levels.length;
+			
+			var date = new Date();
+			date.setFullYear(date.getFullYear() + 1); 
+			document.cookie = "levelCounter=" + levelCounter + "; expires=" + date.toUTCString() + ";";
+			
+			level = new Level(levels[levelCounter]);
+			field = new Field(level, context, that);
+		}, 2000);
 	}
 	
 	/**
@@ -63,6 +69,19 @@ function MortalCoil(pCanvasId) {
 		window.addEventListener("resize", function() {
 			resize();
 		});
+		
+		var cookie = document.cookie;
+		cookie = cookie.split(";");
+		for (var i = 0; i < cookie.length; i++) {
+			if (cookie[i].indexOf("levelCounter") === 0) {
+				cookie = cookie[i].split("=");
+				var stored = parseInt(cookie[1]);
+				if (stored >= 0 && stored < levels.length) {
+					levelCounter = stored;
+				}
+				break;
+			}
+		}
 		
 		level = new Level(levels[levelCounter]);
 		field = new Field(level, context, that);
