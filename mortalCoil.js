@@ -30,12 +30,28 @@ function MortalCoil(pCanvasId) {
 	/**
 	 * the actual level
 	 */
+	var levelCounter = 0;
 	var level;
 	
 	/**
 	 * the field to play on
 	 */
 	var field;
+	
+	/**
+	 * called when a level is finished
+	 * loads a new level
+	 */
+	this.finish = function() {
+		level = null;
+		field = null;
+		
+		levelCounter++;
+		levelCounter %= levels.length;
+		
+		level = new Level(levels[levelCounter]);
+		field = new Field(level, context, this);
+	}
 	
 	/**
 	 * initializes resize handler, thus opens the canvas and gets the context
@@ -48,7 +64,7 @@ function MortalCoil(pCanvasId) {
 			resize();
 		});
 		
-		level = new Level(levels[0]);
+		level = new Level(levels[levelCounter]);
 		field = new Field(level, context, that);
 	}
 	

@@ -22,6 +22,11 @@ function Level(levelDefinition) {
 	var definition;
 	
 	/**
+	 * how many fields are still empty
+	 */
+	var emptyCounter = 0;
+	
+	/**
 	 * @return the height of the level
 	 */
 	this.getHeight = function() {
@@ -67,6 +72,7 @@ function Level(levelDefinition) {
 		}
 		
 		definition[line][col] = BLOCKED;
+		emptyCounter--;
 	};
 	
 	/**
@@ -85,7 +91,15 @@ function Level(levelDefinition) {
 		}
 		
 		definition[line][col] = EMPTY;
+		emptyCounter++;
 	};
+	
+	/**
+	 * @return true, iff field is completely filled
+	 */
+	this.isFinished = function() {
+		return emptyCounter === 0;
+	}
 	
 	/**
 	 * stores the level definition
@@ -130,6 +144,10 @@ function Level(levelDefinition) {
 			for (var j = 0; j < width; j++) {
 				if (definition[i][j] !== WALL && definition[i][j] !== EMPTY) {
 					throw new Error("Invalid level description at position (" + i + "," + j + ").");
+				}
+				
+				if (definition[i][j] === EMPTY) {
+					emptyCounter++;
 				}
 			}
 		}

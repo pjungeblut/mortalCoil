@@ -70,33 +70,66 @@ function Field(level, context, game) {
 	/**
 	 * get mouse coordinates
 	 */
-	window.addEventListener("mousemove", function(e) {
+	window.addEventListener("mousemove", mousemoveHandler);
+	function mousemoveHandler(e) {
 		mouseX = e.clientX;
 		mouseY = e.clientY;
 		getUnderlyingCell();
-	});
+	}
 	
 	/**
 	 * get touch coordinates
 	 */
-	window.addEventListener("touchmove", function(e) {
+	window.addEventListener("touchmove", touchmoveHandler);
+	function touchmoveHandler(e) {
 		mouseX = e.touches[0].clientX;
 		mouseY = e.touches[0].clientY;
 		e.preventDefault();
 		getUnderlyingCell();
-	});
+	}
 	
 	/**
 	 * get clicks
 	 */
-	window.addEventListener("click", function(e) {
-		clickHandler();
-	});
+	window.addEventListener("click", clickHandler);
+	function clickHandler() {
+		if (activeLine < 0 || activeLine >= level.getHeight() || activeCol < 0 || activeCol >= level.getWidth()) {
+			return;
+		}
+		
+		switch (gameState) {
+			case SEARCHING:
+				if (level.getValue(activeLine, activeCol) === EMPTY) {
+					startLine = activeLine;
+					startCol = activeCol;
+					headLine = startLine;
+					headCol = startCol;
+					movements = [[startLine, startCol]];
+					level.setBlocked(startLine, startCol);
+					gameState = MOVING;
+				}
+				break;
+			case MOVING:
+				if (headLine === activeLine && headCol < activeCol) {
+					move(DELTAS[RIGHT]);
+				} else if (headLine === activeLine && headCol > activeCol) {
+					move(DELTAS[LEFT]);
+				} else if (headCol === activeCol && headLine < activeLine) {
+					move(DELTAS[DOWN]);
+				} else if (headCol === activeCol && headLine > activeLine) {
+					move(DELTAS[UP]);
+				}
+				break;
+			default:
+				throw new Error("Invalid game state: " + gameState + ".");
+		}
+	}
 	
 	/**
 	 * get keyboard events
 	 */
-	window.addEventListener("keyup", function(e) {
+	window.addEventListener("keyup", keyupHandler);
+	function keyupHandler(e) {
 		if (!e) {
 			e = window.event;
 		}
@@ -107,19 +140,21 @@ function Field(level, context, game) {
 			var key = e.keyCode;
 		}
 		
-		switch (key) {
-			case 37:
-				move(DELTAS[LEFT]);
-				break;
-			case 38:
-				move(DELTAS[UP]);
-				break;
-			case 39:
-				move(DELTAS[RIGHT]);
-				break;
-			case 40:
-				move(DELTAS[DOWN]);
-				break;
+		if (typeof(startLine) !== "undefined" && typeof(startCol) !== "undefined") {
+			switch (key) {
+				case 37:
+					move(DELTAS[LEFT]);
+					break;
+				case 38:
+					move(DELTAS[UP]);
+					break;
+				case 39:
+					move(DELTAS[RIGHT]);
+					break;
+				case 40:
+					move(DELTAS[DOWN]);
+					break;
+			}
 		}
 		
 		if (key >= 37 && key <= 40) {
@@ -128,7 +163,7 @@ function Field(level, context, game) {
 			e.preventDefault();
 			return false;
 		}
-	});
+	}
 	
 	/**
 	 * to be called by the resize method of the game
@@ -245,42 +280,21 @@ function Field(level, context, game) {
 		}
 		
 		draw();
+		
+		if (level.isFinished()) {
+			finish();
+		}
 	}
 	
 	/**
-	 * handles click or touch events
+	 * signals that level is finished
 	 */
-	function clickHandler() {
-		if (activeLine < 0 || activeLine >= level.getHeight() || activeCol < 0 || activeCol >= level.getWidth()) {
-			return;
-		}
-		
-		switch (gameState) {
-			case SEARCHING:
-				if (level.getValue(activeLine, activeCol) === EMPTY) {
-					startLine = activeLine;
-					startCol = activeCol;
-					headLine = startLine;
-					headCol = startCol;
-					movements = [[startLine, startCol]];
-					level.setBlocked(startLine, startCol);
-					gameState = MOVING;
-				}
-				break;
-			case MOVING:
-				if (headLine === activeLine && headCol < activeCol) {
-					move(DELTAS[RIGHT]);
-				} else if (headLine === activeLine && headCol > activeCol) {
-					move(DELTAS[LEFT]);
-				} else if (headCol === activeCol && headLine < activeLine) {
-					move(DELTAS[DOWN]);
-				} else if (headCol === activeCol && headLine > activeLine) {
-					move(DELTAS[UP]);
-				}
-				break;
-			default:
-				throw new Error("Invalid game state: " + gameState + ".");
-		}
+	function finish() {
+		window.removeEventListener("mousemove", mousemoveHandler);
+		window.removeEventListener("touchmove", touchmoveHandler);
+		window.removeEventListener("click", clickHandler);
+		window.removeEventListener("keyup", keyupHandler);
+		game.finish();
 	}
 	
 	/**
