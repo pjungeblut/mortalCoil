@@ -50,9 +50,11 @@ function MortalCoil(pCanvasId) {
 			levelCounter++;
 			levelCounter %= levels.length;
 			
-			var date = new Date();
-			date.setFullYear(date.getFullYear() + 1); 
-			document.cookie = "levelCounter=" + levelCounter + "; expires=" + date.toUTCString() + ";";
+			if (levelCounter > getMaxLevel()) {
+				var date = new Date();
+				date.setFullYear(date.getFullYear() + 1); 
+				document.cookie = "levelCounter=" + levelCounter + "; expires=" + date.toUTCString() + ";";
+			}
 			
 			level = new Level(levels[levelCounter]);
 			field = new Field(level, context, that);
@@ -70,18 +72,7 @@ function MortalCoil(pCanvasId) {
 			resize();
 		});
 		
-		var cookie = document.cookie;
-		cookie = cookie.split(";");
-		for (var i = 0; i < cookie.length; i++) {
-			if (cookie[i].indexOf("levelCounter") === 0) {
-				cookie = cookie[i].split("=");
-				var stored = parseInt(cookie[1]);
-				if (stored >= 0 && stored < levels.length) {
-					levelCounter = stored;
-				}
-				break;
-			}
-		}
+		levelCounter = getMaxLevel();
 		
 		level = new Level(levels[levelCounter]);
 		field = new Field(level, context, that);
@@ -107,5 +98,27 @@ function MortalCoil(pCanvasId) {
 		if (typeof(field) !== "undefined") {
 			field.resize(context);
 		}
+	}
+	
+	/**
+	 * get max level from cookie
+	 * 
+	 * @return the maximum reached level
+	 */
+	function getMaxLevel() {
+		var cookie = document.cookie;
+		cookie = cookie.split(";");
+		for (var i = 0; i < cookie.length; i++) {
+			if (cookie[i].indexOf("levelCounter") === 0) {
+				cookie = cookie[i].split("=");
+				var stored = parseInt(cookie[1]);
+				if (stored >= 0 && stored < levels.length) {
+					return stored;
+				}
+				break;
+			}
+		}
+		
+		return 0;
 	}
 }
