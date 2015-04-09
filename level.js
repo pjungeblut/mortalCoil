@@ -99,7 +99,21 @@ function Level(levelDefinition) {
 	 */
 	this.isFinished = function() {
 		return emptyCounter === 0;
-	}
+	};
+	
+	/**
+	 * resets the level
+	 * clears all blocked cells
+	 */
+	this.reset = function() {
+		for (var i = 0; i < height; i++) {
+			for (var j = 0; j < width; j++) {
+				if (definition[i][j] === BLOCKED) {
+					this.setEmpty(i, j);
+				}
+			}
+		}
+	};
 	
 	/**
 	 * stores the level definition

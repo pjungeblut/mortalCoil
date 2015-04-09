@@ -68,6 +68,14 @@ function Field(level, context, game) {
 	var DELTAS = [[0, 1], [0, -1], [1, 0], [-1, 0]]; 
 	
 	/**
+	 * image for the restart button
+	 */
+	var RESTART_NORMAL = "img/restart.png";
+	var RESTART_HOVER = "img/restartHover.png";
+	var restartImg = new Image();
+	restartImg.src = RESTART_NORMAL;
+	
+	/**
 	 * get mouse coordinates
 	 */
 	window.addEventListener("mousemove", mousemoveHandler);
@@ -94,6 +102,17 @@ function Field(level, context, game) {
 	window.addEventListener("click", clickHandler);
 	function clickHandler() {
 		if (activeLine < 0 || activeLine >= level.getHeight() || activeCol < 0 || activeCol >= level.getWidth()) {
+			return;
+		}
+		
+		//restart
+		if (activeLine === level.getHeight() - 1 && activeCol === 0) {
+			level.reset();
+			startLine = null;
+			startCol = null;
+			movements = [];
+			gameState = SEARCHING;
+			draw();
 			return;
 		}
 		
@@ -230,6 +249,12 @@ function Field(level, context, game) {
 		activeLine = line;
 		activeCol = col;
 		
+		if (activeLine === level.getHeight() - 1 && activeCol === 0) {
+			restartImg.src = RESTART_HOVER;
+		} else {
+			restartImg.src = RESTART_NORMAL;
+		}
+		
 		if (doDraw) {
 			draw();
 		}
@@ -306,6 +331,7 @@ function Field(level, context, game) {
 		drawCells();
 		drawPath();
 		drawHead();
+		drawRestart();
 	}
 	
 	/**
@@ -409,5 +435,15 @@ function Field(level, context, game) {
 		var y = headLine * (cellSize + 1) + 1;
 		context.fillStyle = HEAD_COLOR;
 		context.fillRect(x, y, cellSize, cellSize);
+	}
+	
+	/**
+	 * draws restart button
+	 */
+	function drawRestart() {
+		var x = offset + 0.1 * cellSize;
+		var y = (level.getHeight() - 1) * (cellSize + 1) + 0.2 * cellSize;
+		
+		context.drawImage(restartImg, x, y, 0.9 * cellSize, 0.7 * cellSize);
 	}
 }
