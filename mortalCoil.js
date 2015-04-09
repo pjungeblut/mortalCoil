@@ -56,7 +56,7 @@ function MortalCoil(pCanvasId) {
 			
 			level = new Level(levels[levelCounter]);
 			field = new Field(level, context, that);
-		}, 2000);
+		}, 1000);
 	}
 	
 	/**

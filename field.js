@@ -31,7 +31,7 @@ function Field(level, context, game) {
 	var ACTIVE_COLOR = "#AAAAAA";
 	var HEAD_COLOR = "#DD8888";
 	var TAIL_COLOR = HEAD_COLOR;
-	var BLOCKED_COLOR = "#CCCCCC";
+	var BLOCKED_COLOR = "#AAAAAA";
 	
 	/**
 	 * mouse coordinates
@@ -76,6 +76,11 @@ function Field(level, context, game) {
 	restartImg.src = RESTART_NORMAL;
 	
 	/**
+	 * the timeout for the touchend
+	 */
+	var touchTimeout;
+	
+	/**
 	 * get mouse coordinates
 	 */
 	window.addEventListener("mousemove", mousemoveHandler);
@@ -100,9 +105,12 @@ function Field(level, context, game) {
 	 * get clicks
 	 */
 	window.addEventListener("click", clickHandler);
-	function clickHandler() {
+	function clickHandler(e) {
 		if (activeLine < 0 || activeLine >= level.getHeight() || activeCol < 0 || activeCol >= level.getWidth()) {
-			return;
+			e.cancelBubble = true;
+			e.stopPropagation();
+			e.preventDefault();
+			return false;
 		}
 		
 		//restart
@@ -115,7 +123,11 @@ function Field(level, context, game) {
 			movements = [];
 			gameState = SEARCHING;
 			draw();
-			return;
+			
+			e.cancelBubble = true;
+			e.stopPropagation();
+			e.preventDefault();
+			return false;
 		}
 		
 		switch (gameState) {
@@ -131,19 +143,54 @@ function Field(level, context, game) {
 				}
 				break;
 			case MOVING:
-				if (headLine === activeLine && headCol < activeCol) {
+				var tolerance = countMoveOptions() == 1 ? 0 : 2;
+				
+				if (
+					(headLine === activeLine && headCol < activeCol) ||
+					(
+						Math.abs(headLine - activeLine) <= 1 &&
+						headCol + tolerance < activeCol &&
+						level.getValue(headLine + DELTAS[RIGHT][0], headCol + DELTAS[RIGHT][1]) === EMPTY
+					)	
+				) {
 					move(DELTAS[RIGHT]);
-				} else if (headLine === activeLine && headCol > activeCol) {
+				} else if (
+					(headLine === activeLine && headCol > activeCol) ||
+					(
+						Math.abs(headLine - activeLine) <= 1 &&
+						headCol - tolerance > activeCol &&
+						level.getValue(headLine + DELTAS[LEFT][0], headCol + DELTAS[LEFT][1]) === EMPTY
+					)
+				) {
 					move(DELTAS[LEFT]);
-				} else if (headCol === activeCol && headLine < activeLine) {
+				} else if (
+					(headCol === activeCol && headLine < activeLine) ||
+					(
+						Math.abs(headCol - activeCol) <= 1 &&
+						headLine + tolerance < activeLine &&
+						level.getValue(headLine + DELTAS[DOWN][0], headCol + DELTAS[DOWN][1]) === EMPTY
+					)
+				) {
 					move(DELTAS[DOWN]);
-				} else if (headCol === activeCol && headLine > activeLine) {
+				} else if (
+					(headCol === activeCol && headLine > activeLine) ||
+					(
+						Math.abs(headCol - activeCol) <= 1 &&
+						headLine - tolerance > activeLine &&
+						level.getValue(headLine + DELTAS[UP][0], headCol + DELTAS[UP][1]) === EMPTY
+					)
+				) {
 					move(DELTAS[UP]);
 				}
 				break;
 			default:
 				throw new Error("Invalid game state: " + gameState + ".");
 		}
+		
+		e.cancelBubble = true;
+		e.stopPropagation();
+		e.preventDefault();
+		return false;
 	}
 	
 	/**
@@ -184,6 +231,19 @@ function Field(level, context, game) {
 			e.preventDefault();
 			return false;
 		}
+	}
+	
+	/**
+	 * handles the end of a touch
+	 * cleares touches field after short timeout
+	 */
+	window.addEventListener("touchend", touchendHandler);
+	function touchendHandler(e) {
+		touchTimeout = window.setTimeout(function() {
+			activLLine = null;
+			activeCol = null;
+			draw();
+		}, 500);
 	}
 	
 	/**
@@ -321,7 +381,23 @@ function Field(level, context, game) {
 		window.removeEventListener("touchmove", touchmoveHandler);
 		window.removeEventListener("click", clickHandler);
 		window.removeEventListener("keyup", keyupHandler);
+		window.removeEventListener("touchend", touchendHandler);
+		window.clearTimeout(touchTimeout);
 		game.finish();
+	}
+	
+	/**
+	 * @return the number of possible moves from the current position
+	 */
+	function countMoveOptions() {
+		var result = 0;
+		
+		if (level.getValue(headLine - 1, headCol) === EMPTY) result++;
+		if (level.getValue(headLine + 1, headCol) === EMPTY) result++;
+		if (level.getValue(headLine, headCol - 1) === EMPTY) result++;
+		if (level.getValue(headLine, headCol + 1) === EMPTY) result++;
+		
+		return result;
 	}
 	
 	/**
