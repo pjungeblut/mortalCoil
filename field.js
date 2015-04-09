@@ -110,6 +110,8 @@ function Field(level, context, game) {
 			level.reset();
 			startLine = null;
 			startCol = null;
+			headLine = null;
+			headCol = null;
 			movements = [];
 			gameState = SEARCHING;
 			draw();
@@ -431,6 +433,10 @@ function Field(level, context, game) {
 	 * draws the head
 	 */
 	function drawHead() {
+		if (!Number.isInteger(headLine) || !Number.isInteger(headCol)) {
+			return;
+		}
+		
 		var x = offset + headCol * (cellSize + 1) + 1;
 		var y = headLine * (cellSize + 1) + 1;
 		context.fillStyle = HEAD_COLOR;
