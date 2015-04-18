@@ -4,8 +4,17 @@
 		<meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />
 		<title>Mortal Coil</title>
 		<link rel="stylesheet" type="text/css" href="style.css">
+		<script>
+			Number.isInteger = Number.isInteger || function(value) {
+				return typeof value === "number" && 
+					isFinite(value) && 
+					Math.floor(value) === value;
+			};
+		</script>
+		<script src="cookie.js"></script>
 		<script src="levels.js"></script>
 		<script src="level.js"></script>
+		<script src="button.js"></script>
 		<script src="field.js"></script>
 		<script src="mortalCoil.js"></script>
 		<script>

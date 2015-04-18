@@ -32,6 +32,7 @@ function Field(level, context, game) {
 	var HEAD_COLOR = "#DD8888";
 	var TAIL_COLOR = HEAD_COLOR;
 	var BLOCKED_COLOR = "#AAAAAA";
+	var BUTTON_BAR_COLOR = WALL_COLOR;
 	
 	/**
 	 * mouse coordinates
@@ -61,19 +62,56 @@ function Field(level, context, game) {
 	 */
 	var startLine;
 	var startCol;
-	var headLine;
-	var headCol;
+	var headLine = -1;
+	var headCol = -1;
 	var movements = [];
 	var RIGHT = 0, LEFT = 1, DOWN = 2, UP = 3;
 	var DELTAS = [[0, 1], [0, -1], [1, 0], [-1, 0]]; 
 	
 	/**
-	 * image for the restart button
+	 * button bar
+	 */
+	var buttonBarHeight = 50;
+	var buttonBarWidth;
+	
+	/**
+	 * restart Button
 	 */
 	var RESTART_NORMAL = "img/restart.png";
 	var RESTART_HOVER = "img/restartHover.png";
-	var restartImg = new Image();
-	restartImg.src = RESTART_NORMAL;
+	var restartButton = new Button(RESTART_NORMAL, RESTART_HOVER, 50, 40, context);
+	restartButton.click = function() {
+		level.reset();
+		startLine = null;
+		startCol = null;
+		headLine = -1;
+		headCol = -1;
+		movements = [];
+		gameState = SEARCHING;
+		draw();
+	};
+	
+	/**
+	 * previous level button
+	 */
+	var PREV_NORMAL = "img/left.png";
+	var PREV_HOVER = "img/leftHover.png";
+	var prevButton = new Button(PREV_NORMAL, PREV_HOVER, 40, 40, context);
+	prevButton.click = function() {
+		finish();
+		game.prev();
+	};
+	
+	/**
+	 * next level button
+	 */
+	var NEXT_NORMAL = "img/right.png";
+	var NEXT_HOVER = "img/rightHover.png";
+	var nextButton = new Button(NEXT_NORMAL, NEXT_HOVER, 40, 40, context);
+	nextButton.click = function() {
+		finish();
+		game.next();
+	};
 	
 	/**
 	 * the timeout for the touchend
@@ -106,24 +144,8 @@ function Field(level, context, game) {
 	 */
 	window.addEventListener("click", clickHandler);
 	function clickHandler(e) {
+		//is click over field?
 		if (activeLine < 0 || activeLine >= level.getHeight() || activeCol < 0 || activeCol >= level.getWidth()) {
-			e.cancelBubble = true;
-			e.stopPropagation();
-			e.preventDefault();
-			return false;
-		}
-		
-		//restart
-		if (activeLine === level.getHeight() - 1 && activeCol === 0) {
-			level.reset();
-			startLine = null;
-			startCol = null;
-			headLine = null;
-			headCol = null;
-			movements = [];
-			gameState = SEARCHING;
-			draw();
-			
 			e.cancelBubble = true;
 			e.stopPropagation();
 			e.preventDefault();
@@ -262,9 +284,18 @@ function Field(level, context, game) {
 		canvasWidth = context.canvas.width;
 		canvasHeight = context.canvas.height;
 		
-		cellSize = getCellSize(canvasWidth, canvasHeight);
+		cellSize = getCellSize(canvasWidth, canvasHeight - buttonBarHeight);
+		buttonBarWidth = level.getWidth() * (cellSize + 1) + 1;
+		offset = (canvasWidth - buttonBarWidth) / 2;
 		
-		offset = (canvasWidth - (level.getWidth() * (cellSize + 1) + 1)) / 2;
+		restartButton.setX(offset + (buttonBarWidth - 50) / 2);
+		restartButton.setY(level.getHeight() * (cellSize + 1) + 6);
+		
+		prevButton.setX(offset + 5);
+		prevButton.setY(level.getHeight() * (cellSize + 1) + 6);
+		
+		nextButton.setX(offset + buttonBarWidth - 45);
+		nextButton.setY(level.getHeight() * (cellSize + 1) + 6);
 		
 		draw();
 	};
@@ -310,12 +341,6 @@ function Field(level, context, game) {
 		
 		activeLine = line;
 		activeCol = col;
-		
-		if (activeLine === level.getHeight() - 1 && activeCol === 0) {
-			restartImg.src = RESTART_HOVER;
-		} else {
-			restartImg.src = RESTART_NORMAL;
-		}
 		
 		if (doDraw) {
 			draw();
@@ -370,6 +395,7 @@ function Field(level, context, game) {
 		
 		if (level.isFinished()) {
 			finish();
+			game.finish();
 		}
 	}
 	
@@ -377,13 +403,16 @@ function Field(level, context, game) {
 	 * signals that level is finished
 	 */
 	function finish() {
+		level.reset();
+		restartButton.destroy();
+		prevButton.destroy();
+		nextButton.destroy();
 		window.removeEventListener("mousemove", mousemoveHandler);
 		window.removeEventListener("touchmove", touchmoveHandler);
 		window.removeEventListener("click", clickHandler);
 		window.removeEventListener("keyup", keyupHandler);
 		window.removeEventListener("touchend", touchendHandler);
 		window.clearTimeout(touchTimeout);
-		game.finish();
 	}
 	
 	/**
@@ -409,7 +438,10 @@ function Field(level, context, game) {
 		drawCells();
 		drawPath();
 		drawHead();
-		drawRestart();
+		drawButtonBar();
+		prevButton.draw();
+		restartButton.draw();
+		nextButton.draw();
 	}
 	
 	/**
@@ -509,7 +541,7 @@ function Field(level, context, game) {
 	 * draws the head
 	 */
 	function drawHead() {
-		if (!Number.isInteger(headLine) || !Number.isInteger(headCol)) {
+		if (headLine == -1 || headCol == -1) {
 			return;
 		}
 		
@@ -520,12 +552,20 @@ function Field(level, context, game) {
 	}
 	
 	/**
-	 * draws restart button
+	 * draws the button bar
 	 */
-	function drawRestart() {
-		var x = offset + 0.1 * cellSize;
-		var y = (level.getHeight() - 1) * (cellSize + 1) + 0.2 * cellSize;
+	function drawButtonBar() {
+		context.fillStyle = BUTTON_BAR_COLOR;
+		context.fillRect(offset, level.getHeight() * (cellSize + 1) + 1, buttonBarWidth, buttonBarHeight);
 		
-		context.drawImage(restartImg, x, y, 0.9 * cellSize, 0.7 * cellSize);
+		context.strokeStyle = GRID_COLOR;
+		context.lineWidth = 1;
+		context.beginPath();
+		context.moveTo(offset + 0.5, level.getHeight() * (cellSize + 1) + 1);
+		context.lineTo(offset + 0.5, level.getHeight() * (cellSize + 1) + 1 + buttonBarHeight);
+		context.lineTo(offset + buttonBarWidth - 0.5, level.getHeight() * (cellSize + 1) + 1 + buttonBarHeight);
+		context.lineTo(offset + buttonBarWidth - 0.5, level.getHeight() * (cellSize + 1) + 1);
+		context.stroke();
+		context.closePath();
 	}
 }

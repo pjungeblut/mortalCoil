@@ -39,27 +39,44 @@ function MortalCoil(pCanvasId) {
 	var field;
 	
 	/**
+	 * intervall for the slide
+	 */
+	var slideInterval;
+	
+	/**
 	 * called when a level is finished
 	 * loads a new level
 	 */
 	this.finish = function() {
-		window.setTimeout(function() {
-			level = null;
-			field = null;
-			
+		levelCounter++;
+		levelCounter %= levels.length;
+		
+		if (levelCounter > getMaxLevel()) {
+			setCookie("levelCounter", levelCounter);
+		}
+		
+		loadNewLevel();
+	};
+	
+	/**
+	 * loads the previous level
+	 */
+	this.prev = function() {
+		if (levelCounter > 0) {
+			levelCounter--;
+		}
+		loadNewLevel();
+	};
+	
+	/**
+	 * loads the next level
+	 */
+	this.next = function() {
+		if (levelCounter < getMaxLevel()) {
 			levelCounter++;
-			levelCounter %= levels.length;
-			
-			if (levelCounter > getMaxLevel()) {
-				var date = new Date();
-				date.setFullYear(date.getFullYear() + 1); 
-				document.cookie = "levelCounter=" + levelCounter + "; expires=" + date.toUTCString() + ";";
-			}
-			
-			level = new Level(levels[levelCounter]);
-			field = new Field(level, context, that);
-		}, 1000);
-	}
+		}
+		loadNewLevel();
+	};
 	
 	/**
 	 * initializes resize handler, thus opens the canvas and gets the context
@@ -72,10 +89,23 @@ function MortalCoil(pCanvasId) {
 			resize();
 		});
 		
-		levelCounter = getMaxLevel();
+		levelCounter = readCookie("level");
 		
-		level = new Level(levels[levelCounter]);
-		field = new Field(level, context, that);
+		loadNewLevel();
+	}
+	
+	/**
+	 * loads a new level
+	 */
+	function loadNewLevel() {
+		slide();
+		window.setTimeout(function() {
+			window.clearInterval(slideInterval);
+			context.globalAlpha = 1;
+			level = new Level(levels[levelCounter]);
+			field = new Field(level, context, that);
+			setCookie("level", levelCounter);
+		}, 1000);
 	}
 	
 	/**
@@ -106,19 +136,20 @@ function MortalCoil(pCanvasId) {
 	 * @return the maximum reached level
 	 */
 	function getMaxLevel() {
-		var cookie = document.cookie;
-		cookie = cookie.split(";");
-		for (var i = 0; i < cookie.length; i++) {
-			if (cookie[i].indexOf("levelCounter") === 0) {
-				cookie = cookie[i].split("=");
-				var stored = parseInt(cookie[1]);
-				if (stored >= 0 && stored < levels.length) {
-					return stored;
-				}
-				break;
-			}
-		}
+		return readCookie("levelCounter");
+	}
+	
+	/**
+	 * creates the slide to the next level
+	 */
+	function slide() {
+		var date = new Date();
 		
-		return 0;
+		context.globalAlpha = 0;
+		slideInterval = window.setInterval(function() {
+			context.fillStyle = "black";
+			context.globalAlpha += 0.02;
+			context.fillRect(0, 0, canvas.width, canvas.height);
+		}, 50);
 	}
 }
